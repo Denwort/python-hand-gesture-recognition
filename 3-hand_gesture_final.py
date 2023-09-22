@@ -70,9 +70,10 @@ serverAddressPort = ("127.0.0.1", 5052)
 
 # Create a gesture recognizer instance with the live stream mode:
 def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
-    for i in range(len(result.gestures)):
-        print('Gesture {}: {}'.format(result.handedness[i][0].display_name ,result.gestures[i][0].category_name), end=" \t")
-    print()
+    # for i in range(len(result.gestures)):
+    #    print('Gesture {}: {}'.format(result.handedness[i][0].display_name ,result.gestures[i][0].category_name), end=" \t")
+    # print()
+    return
 
 options = GestureRecognizerOptions(
     base_options=BaseOptions(model_asset_buffer=model),
@@ -142,7 +143,7 @@ while True:
     # Process hands
     results = hands.process(color_images_rgb)
     if results.multi_hand_landmarks:
-        data = []
+        data = [[],[]]
         number_of_hands = len(results.multi_hand_landmarks)
         i=0
         for handLms in results.multi_hand_landmarks:
@@ -150,7 +151,10 @@ while True:
             
             org2 = (20, org[1]+(20*(i+1)))
             hand_side_classification_list = results.multi_handedness[i]
+
             hand_side = hand_side_classification_list.classification[0].label
+            index = hand_side_classification_list.classification[0].index
+
             middle_finger_knuckle = results.multi_hand_landmarks[i].landmark[9]
 
             (x, y) = getXY(middle_finger_knuckle, depth_image_flipped)
@@ -163,17 +167,20 @@ while True:
             
             images = cv2.putText(images, f"{hand_side} Hand Distance: {mfk_distance:0.4} m away", org2, font, fontScale, color, thickness, cv2.LINE_AA)
 
-            i+=1
+            # Obtener coordenadas de los puntos de la mano
+            for j in range(21):
+                (x,y) = getXY(results.multi_hand_landmarks[i].landmark[j], depth_image_flipped)
+                z = int(depth_image_flipped[y,x] * depth_scale *1000)
+                y = stream_res_y - y
+                data[index].append(x)
+                data[index].append(y)
+                data[index].append(z)
 
-        # Obtener coordenadas de los puntos de solo una mano
-        for j in range(21):
-            (x,y) = getXY(results.multi_hand_landmarks[0].landmark[j], depth_image_flipped)
-            z = int(depth_image_flipped[y,x] * depth_scale *1000)
-            y = stream_res_y - y
-            data.append(x)
-            data.append(y)
-            data.append(z)
-        socket.sendto( str.encode(str(data)) , serverAddressPort )
+            i+=1
+        
+        delim = "-"
+        res = delim.join(map(str, data))
+        socket.sendto( str.encode(str(res)) , serverAddressPort )
 
         images = cv2.putText(images, f"Hands: {number_of_hands}", org, font, fontScale, color, thickness, cv2.LINE_AA)
 
