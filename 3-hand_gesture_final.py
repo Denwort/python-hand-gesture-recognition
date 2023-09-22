@@ -71,7 +71,7 @@ serverAddressPort = ("127.0.0.1", 5052)
 # Create a gesture recognizer instance with the live stream mode:
 def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
     for i in range(len(result.gestures)):
-        print('Gesture {}: {}'.format(result.handedness[i][0].display_name ,result.gestures[i][0].category_name), end="\t")
+        print('Gesture {}: {}'.format(result.handedness[i][0].display_name ,result.gestures[i][0].category_name), end=" \t")
     print()
 
 options = GestureRecognizerOptions(
