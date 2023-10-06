@@ -1,13 +1,3 @@
-# ====== Sample Code for Smart Design Technology Blog ======
-
-# Intel Realsense D435 cam has RGB camera with 1920×1080 resolution
-# Depth camera is 1280x720
-# FOV is limited to 69deg x 42deg (H x V) - the RGB camera FOV
-
-# If you run this on a non-Intel CPU, explore other options for rs.align
-    # On the NVIDIA Jetson AGX we build the pyrealsense lib with CUDA
-
-# https://medium.com/@smart-design-techology/hand-detection-in-3d-space-888433a1c1f3
 
 import pyrealsense2 as rs
 import mediapipe as mp
