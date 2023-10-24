@@ -66,13 +66,15 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 
 # Socket
 socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-serverAddressPort = ("127.0.0.1", 5052)
+serverAddressPort1 = ("127.0.0.1", 5052)
+serverAddressPort2 = ("127.0.0.1", 5053)
 
 # Create a gesture recognizer instance with the live stream mode:
 def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
-    # for i in range(len(result.gestures)):
-    #    print('Gesture {}: {}'.format(result.handedness[i][0].display_name ,result.gestures[i][0].category_name), end=" \t")
-    # print()
+    gestos = ['None','None']
+    for i in range(len(result.gestures)):
+        gestos[1-result.handedness[i][0].index] = result.gestures[i][0].category_name
+    socket.sendto( str.encode(str(gestos)) , serverAddressPort2 )
     return
 
 options = GestureRecognizerOptions(
@@ -159,9 +161,9 @@ while True:
 
             (x, y) = getXY(middle_finger_knuckle, depth_image_flipped)
 
-            index_tip = results.multi_hand_landmarks[i].landmark[8]
-            (x2, y2) = getXY(index_tip, depth_image_flipped)
-            cv2.circle(images,(x2,y2), 10 , (255,0,255), cv2.FILLED)
+            #index_tip = results.multi_hand_landmarks[i].landmark[8]
+            #(x2, y2) = getXY(index_tip, depth_image_flipped)
+            #cv2.circle(images,(x2,y2), 10 , (255,0,255), cv2.FILLED)
 
             mfk_distance = depth_image_flipped[y,x] * depth_scale # meters
             
@@ -180,7 +182,7 @@ while True:
         
         delim = "-"
         res = delim.join(map(str, data))
-        socket.sendto( str.encode(str(res)) , serverAddressPort )
+        socket.sendto( str.encode(str(res)) , serverAddressPort1 )
 
         images = cv2.putText(images, f"Hands: {number_of_hands}", org, font, fontScale, color, thickness, cv2.LINE_AA)
 
