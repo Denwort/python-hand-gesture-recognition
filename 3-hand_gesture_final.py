@@ -42,7 +42,11 @@ config = rs.config()
 
 # ====== Mediapipe ======
 mpHands = mp.solutions.hands
-hands = mpHands.Hands()
+hands = mpHands.Hands(
+    #static_image_mode = True,
+    max_num_hands = 2,
+    #min_detection_confidence = 0.5
+)
 mpDraw = mp.solutions.drawing_utils
 
 # ====== Task ======
@@ -84,7 +88,7 @@ config.enable_device(device)
 stream_res_x = 1280 # 640 o 1280
 stream_res_y = 720 # 480 o 720
 
-stream_fps = 30
+stream_fps = 30 # 60 o 30
 
 config.enable_stream(rs.stream.depth, stream_res_x, stream_res_y, rs.format.z16, stream_fps)
 config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8, stream_fps)
@@ -170,7 +174,7 @@ while True:
 
             i+=1
         
-        delim = "-"
+        delim = "&"
         res = delim.join(map(str, data))
         socket.sendto( str.encode(str(res)) , serverAddressPort1 )
 
