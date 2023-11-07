@@ -47,7 +47,7 @@ hands = mpHands.Hands(
 mpDraw = mp.solutions.drawing_utils
 
 # ====== Task ======
-with open('model.task', 'rb') as f:
+with open('tasks/model.task', 'rb') as f:
     model = f.read()
 BaseOptions = mp.tasks.BaseOptions
 GestureRecognizer = mp.tasks.vision.GestureRecognizer
@@ -65,6 +65,8 @@ def print_result(result: GestureRecognizerResult, output_image: mp.Image, timest
     gestos = ['None','None']
     for i in range(len(result.gestures)):
         gestos[1-result.handedness[i][0].index] = result.gestures[i][0].category_name
+        print(result.handedness[i][0].display_name, ":", result.gestures[i][0].category_name, end="   \t")
+    print()
     socket.sendto( str.encode(str(gestos)) , serverAddressPort2 )
     return
 
