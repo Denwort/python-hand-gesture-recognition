@@ -9,10 +9,7 @@ from mediapipe.tasks.python import vision
 import time
 import socket
 
-
-def current_milli_time():
-    return round(time.time() * 1000)
-
+# Get (x,y) coordinates of a handpoint
 def getXY(landmark, depth_image_flipped):
     x = int(landmark.x*len(depth_image_flipped[0]))
     y = int(landmark.y*len(depth_image_flipped))
@@ -22,6 +19,7 @@ def getXY(landmark, depth_image_flipped):
         y = len(depth_image_flipped) - 1
     return (x, y)
 
+# Visual configuration
 font = cv2.FONT_HERSHEY_SIMPLEX
 org = (20, 100)
 fontScale = .5
@@ -35,14 +33,17 @@ for i in range(len(realsense_ctx.devices)):
     detected_camera = realsense_ctx.devices[i].get_info(rs.camera_info.serial_number)
     print(f"{detected_camera}")
     connected_devices.append(detected_camera)
-device = connected_devices[0] # In this example we are only using one camera
+device = connected_devices[0]
 pipeline = rs.pipeline()
 config = rs.config()
-# background_removed_color = 153 # Grey
 
 # ====== Mediapipe ======
 mpHands = mp.solutions.hands
-hands = mpHands.Hands()
+hands = mpHands.Hands(
+    #static_image_mode = True,
+    max_num_hands = 2,
+    #min_detection_confidence = 0.5
+)
 mpDraw = mp.solutions.drawing_utils
 
 # ====== Task ======
@@ -74,9 +75,6 @@ options = GestureRecognizerOptions(
     num_hands=2) 
 
 recognizer = GestureRecognizer.create_from_options(options)
-# with GestureRecognizer.create_from_options(options) as recognizer:
-  # The detector is initialized. Use it here.
-  # ...
 
 # ====== Enable Streams ======
 config.enable_device(device)
@@ -84,7 +82,7 @@ config.enable_device(device)
 stream_res_x = 1280 # 640 o 1280
 stream_res_y = 720 # 480 o 720
 
-stream_fps = 30
+stream_fps = 30 # 60 o 30
 
 config.enable_stream(rs.stream.depth, stream_res_x, stream_res_y, rs.format.z16, stream_fps)
 config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8, stream_fps)
@@ -120,11 +118,10 @@ while True:
 
     # Process images
     depth_image = np.asanyarray(aligned_depth_frame.get_data())
-    depth_image_flipped = cv2.flip(depth_image,1) # cv2.flip(depth_image,1)
+    depth_image_flipped = cv2.flip(depth_image,1)
     color_image = np.asanyarray(color_frame.get_data())
 
     depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #Depth image is 1 channel, while color image is 3
-    # background_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), background_removed_color, color_image)
 
     depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
@@ -151,10 +148,6 @@ while True:
 
             (x, y) = getXY(middle_finger_knuckle, depth_image_flipped)
 
-            #index_tip = results.multi_hand_landmarks[i].landmark[8]
-            #(x2, y2) = getXY(index_tip, depth_image_flipped)
-            #cv2.circle(images,(x2,y2), 10 , (255,0,255), cv2.FILLED)
-
             mfk_distance = depth_image_flipped[y,x] * depth_scale # meters
             
             images = cv2.putText(images, f"{hand_side} Hand Distance: {mfk_distance:0.4} m away", org2, font, fontScale, color, thickness, cv2.LINE_AA)
@@ -170,7 +163,8 @@ while True:
 
             i+=1
         
-        delim = "-"
+        # Send handpoints to socket
+        delim = "&"
         res = delim.join(map(str, data))
         socket.sendto( str.encode(str(res)) , serverAddressPort1 )
 
@@ -179,7 +173,7 @@ while True:
         # Recognize gesture
         color_images_rgb = cv2.flip(color_images_rgb,1) 
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=color_images_rgb)
-        recognizer.recognize_async(mp_image, int(current_milli_time()))
+        recognizer.recognize_async(mp_image, int(round(time.time() * 1000)))
 
 
     else:
