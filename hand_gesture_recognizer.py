@@ -55,12 +55,12 @@ GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
 GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
 VisionRunningMode = mp.tasks.vision.RunningMode
 
-# Socket
+# ====== Socket ======
 socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 serverAddressPort1 = ("127.0.0.1", 5052)
 serverAddressPort2 = ("127.0.0.1", 5053)
 
-# Create a gesture recognizer instance with the live stream mode:
+# ====== Gesture Recognizer ======
 def print_result(result: GestureRecognizerResult, output_image: mp.Image, timestamp_ms: int):
     gestos = ['None','None']
     for i in range(len(result.gestures)):
@@ -81,10 +81,10 @@ recognizer = GestureRecognizer.create_from_options(options)
 # ====== Enable Streams ======
 config.enable_device(device)
 
-stream_res_x = 1280 # 640 o 1280
-stream_res_y = 720 # 480 o 720
+stream_res_x = 848 # 640 o 1280
+stream_res_y = 480 # 480 o 720
 
-stream_fps = 30 # 60 o 30
+stream_fps = 60 # 60 o 30
 
 config.enable_stream(rs.stream.depth, stream_res_x, stream_res_y, rs.format.z16, stream_fps)
 config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8, stream_fps)
@@ -132,6 +132,7 @@ while True:
     color_images_rgb = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
 
     # Process hands
+    
     results = hands.process(color_images_rgb)
     if results.multi_hand_landmarks:
         data = [[],[]]
@@ -173,6 +174,7 @@ while True:
         images = cv2.putText(images, f"Hands: {number_of_hands}", org, font, fontScale, color, thickness, cv2.LINE_AA)
 
         # Recognize gesture
+
         color_images_rgb = cv2.flip(color_images_rgb,1) 
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=color_images_rgb)
         recognizer.recognize_async(mp_image, int(round(time.time() * 1000)))
@@ -182,6 +184,8 @@ while True:
         images = cv2.putText(images,"No Hands", org, font, fontScale, color, thickness, cv2.LINE_AA)
 
 
+    
+        
     # Display FPS
     time_diff = dt.datetime.today().timestamp() - start_time
     fps = int(1 / time_diff) if time_diff != 0 else 0
