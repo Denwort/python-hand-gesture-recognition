@@ -17,7 +17,7 @@ def getXY(landmark, depth_image_flipped):
     if y >= len(depth_image_flipped):
         y = len(depth_image_flipped) - 1
     return (x, y)
-prev_z = 0.4
+prev_z = [0.4, 0.4]
 
 # ====== Realsense ======
 realsense_ctx = rs.context()
@@ -108,19 +108,24 @@ with GestureRecognizer.create_from_options(options) as recognizer:
 
                 (cx, cy) = getXY(result.hand_landmarks[i][0], depth_image) 
 
+                # Filter wrong depth results
                 cz = depth_image[cy,cx] * depth_scale
-                if cz >= 0.3:
-                    prev_z = cz
-                cz = prev_z
+                if cz >= 0.3 and cz <= 1.3:
+                    prev_z[index] = cz
+                print("Real depth: ", cz, " - Last registered: ", prev_z)    
+                cz = prev_z[index]
                 
+                # Adjust results
                 cx = cx / 1000
                 cy = cy / 1000
                 cz = cz
 
-                # Iterate handpoints
+                # Iterate handpoints: hand_landmarks has better results for x and y. hand_wold_landmarks has better results for z
                 for j in range(21):
-                    x = result.hand_world_landmarks[i][j].x + cx # x = result.hand_landmarks[i][j].x * stream_res_x / 900 + cx
-                    y = result.hand_world_landmarks[i][j].y + cy # y = result.hand_landmarks[i][j].y * stream_res_y / 900 + cy 
+                    x = result.hand_landmarks[i][j].x * stream_res_x / 900 + cx
+                    y = result.hand_landmarks[i][j].y * stream_res_y / 900 + cy 
+                    # x = result.hand_world_landmarks[i][j].x + cx 
+                    # y = result.hand_world_landmarks[i][j].y + cy
                     z = result.hand_world_landmarks[i][j].z + cz 
                     data[index].append(x)
                     data[index].append(y)
