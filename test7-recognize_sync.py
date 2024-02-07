@@ -47,9 +47,9 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 options = GestureRecognizerOptions(
     base_options=BaseOptions(model_asset_path='tasks/gesture_recognizer.task'),
     running_mode=VisionRunningMode.IMAGE,
-    min_hand_detection_confidence = 0.1,
+    min_hand_detection_confidence = 0.3,
     min_hand_presence_confidence = 0.1,
-    min_tracking_confidence = 0.1,
+    min_tracking_confidence = 0.01,
     num_hands=2)
 
 # ====== Start Realsense ======
@@ -112,7 +112,6 @@ with GestureRecognizer.create_from_options(options) as recognizer:
                 cz = depth_image[cy,cx] * depth_scale
                 if cz >= 0.3 and cz <= 1.3:
                     prev_z[index] = cz
-                print("Real depth: ", cz, " - Last registered: ", prev_z)    
                 cz = prev_z[index]
                 
                 # Adjust results
