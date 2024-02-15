@@ -6,19 +6,6 @@ import socket
 import numpy as np
 import time
 
-
-profundidad = []
-escala = 0
-def getXY(landmark, depth_image_flipped):
-    x = int(landmark.x*len(depth_image_flipped[0]))
-    y = int(landmark.y*len(depth_image_flipped))
-    if x >= len(depth_image_flipped[0]):
-        x = len(depth_image_flipped[0]) - 1
-    if y >= len(depth_image_flipped):
-        y = len(depth_image_flipped) - 1
-    return (x, y)
-prev_z = [0.4, 0.4]
-
 # ====== Realsense ======
 realsense_ctx = rs.context()
 connected_devices = [] # List of serial numbers for present cameras
@@ -29,6 +16,7 @@ for i in range(len(realsense_ctx.devices)):
 device = connected_devices[0]
 pipeline = rs.pipeline()
 config = rs.config()
+previous_z = [0.4, 0.4] 
 
 # ====== Sockets ======
 socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -106,31 +94,37 @@ with GestureRecognizer.create_from_options(options) as recognizer:
 
                 index = 1 - result.handedness[i][0].index
 
-                (cx, cy) = getXY(result.hand_landmarks[i][0], depth_image) 
+                center_x = int(result.hand_landmarks[i][0].x * len(depth_image[0]))
+                center_y = int(result.hand_landmarks[i][0].y * len(depth_image))
+                if center_x >= len(depth_image[0]):
+                    center_x = len(depth_image[0]) - 1
+                if center_y >= len(depth_image):
+                    center_y = len(depth_image) - 1
+                
 
                 # Filter wrong depth results
-                cz = depth_image[cy,cx] * depth_scale
-                if cz >= 0.3 and cz <= 1.3:
-                    prev_z[index] = cz
-                cz = prev_z[index]
+                center_z = depth_image[center_y,center_x] * depth_scale
+                if center_z >= 0.3 and center_z <= 1.3:
+                    previous_z[index] = center_z
+                center_z = previous_z[index]
                 
                 # Adjust results
-                cx = cx / 1000
-                cy = cy / 1000
-                cz = cz
+                center_x = center_x / 1000
+                center_y = center_y / 1000
+                center_z = center_z 
 
                 # Iterate handpoints: hand_landmarks has better results for x and y. hand_wold_landmarks has better results for z
                 for j in range(21):
-                    x = result.hand_landmarks[i][j].x * stream_res_x / 900 + cx
-                    y = result.hand_landmarks[i][j].y * stream_res_y / 900 + cy 
-                    # x = result.hand_world_landmarks[i][j].x + cx 
-                    # y = result.hand_world_landmarks[i][j].y + cy
-                    z = result.hand_world_landmarks[i][j].z + cz 
+                    x = result.hand_landmarks[i][j].x * stream_res_x / 900 + center_x
+                    y = result.hand_landmarks[i][j].y * stream_res_y / 900 + center_y 
+                    # x = result.hand_world_landmarks[i][j].x + center_x 
+                    # y = result.hand_world_landmarks[i][j].y + center_y
+                    z = result.hand_world_landmarks[i][j].z + center_z 
                     data[index].append(x)
                     data[index].append(y)
                     data[index].append(z)
                     cv2.circle(image, (int(result.hand_landmarks[i][j].x * stream_res_x), int(result.hand_landmarks[i][j].y*stream_res_y)), 2, (0,255,0), 2)
-                    cv2.circle(image, (int(result.hand_world_landmarks[i][j].x* 1000 + cx*1000), int(result.hand_world_landmarks[i][j].y*1000 + cy*1000)), 2, (255,0,0), 2)
+                    cv2.circle(image, (int(result.hand_world_landmarks[i][j].x* 1000 + center_x*1000), int(result.hand_world_landmarks[i][j].y*1000 + center_y*1000)), 2, (255,0,0), 2)
                     
 
             res = "&".join(map(str, data))
