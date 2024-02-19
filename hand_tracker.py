@@ -51,10 +51,8 @@ config.enable_stream(rs.stream.color, stream_res_x, stream_res_y, rs.format.bgr8
 profile = pipeline.start(config)
 align_to = rs.stream.color
 align = rs.align(align_to)
-# Get depth Scale
 depth_sensor = profile.get_device().first_depth_sensor()
 depth_scale = depth_sensor.get_depth_scale()
-# Set clipping distance
 clipping_distance_in_meters = 2
 clipping_distance = clipping_distance_in_meters / depth_scale
 print(f"\tConfiguration Successful for SN {device}")
@@ -72,7 +70,7 @@ with GestureRecognizer.create_from_options(options) as recognizer:
         if not aligned_depth_frame or not color_frame:
             continue
 
-        # Process images
+        # Process image data
         depth_image = np.asanyarray(aligned_depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
 
@@ -101,7 +99,6 @@ with GestureRecognizer.create_from_options(options) as recognizer:
                 if center_y >= len(depth_image):
                     center_y = len(depth_image) - 1
                 
-
                 # Filter wrong depth results
                 center_z = depth_image[center_y,center_x] * depth_scale
                 if center_z >= 0.3 and center_z <= 1.3:
@@ -123,8 +120,12 @@ with GestureRecognizer.create_from_options(options) as recognizer:
                     data[index].append(x)
                     data[index].append(y)
                     data[index].append(z)
-                    cv2.circle(image, (int(result.hand_landmarks[i][j].x * stream_res_x), int(result.hand_landmarks[i][j].y*stream_res_y)), 2, (0,255,0), 2)
-                    cv2.circle(image, (int(result.hand_world_landmarks[i][j].x* 1000 + center_x*1000), int(result.hand_world_landmarks[i][j].y*1000 + center_y*1000)), 2, (255,0,0), 2)
+
+                # Draw hand visualization                
+                for line in [(0,1), (1,2), (2,3), (3,4), (0,5), (5,6), (6,7), (7,8), (5,9), (9,10), (10,11), (11,12), (9,13), (13,14), (14,15), (15,16), (0,17), (13,17), (17,18), (18,19), (19,20)]:
+                    cv2.line(image, (int(result.hand_landmarks[i][line[0]].x * stream_res_x), int(result.hand_landmarks[i][line[0]].y * stream_res_y)), (int(result.hand_landmarks[i][line[1]].x * stream_res_x),int(result.hand_landmarks[i][line[1]].y * stream_res_y)), (0,255,0), 1)
+                for point in range(21):
+                    cv2.circle(image, (int(result.hand_landmarks[i][point].x * stream_res_x), int(result.hand_landmarks[i][point].y*stream_res_y)), 2, (255,0,0), 2)
                     
 
             res = "&".join(map(str, data))
